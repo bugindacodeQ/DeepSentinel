@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.pth
+*.onnx
+*.pt
+
+# Data (too large for git — use DVC or manual download)
+data/raw/
+data/processed/
+
+# Env
+.env
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

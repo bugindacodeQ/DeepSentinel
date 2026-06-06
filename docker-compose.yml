@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: deepsentinel-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount weights so you don't have to rebuild the image after retraining
+      - ./models:/app/models
+    environment:
+      - WEIGHTS_PATH=models/weights/efficientnet_b4.pth
+      - DEVICE=cpu
+    restart: unless-stopped
+
+  gradio:
+    build: .
+    container_name: deepsentinel-ui
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./models:/app/models
+      - ./data/samples:/app/data/samples
+    environment:
+      - WEIGHTS_PATH=models/weights/efficientnet_b4.pth
+      - DEVICE=cpu
+    command: ["python", "app/gradio_app.py"]
+    restart: unless-stopped
