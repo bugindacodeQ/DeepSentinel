@@ -1,12 +1,4 @@
----
-title: DeepSentinel
-emoji: 🛡️
-colorFrom: blue
-colorTo: red
-sdk: gradio
-sdk_version: "6.16.0"
-app_file: app/gradio_app.py
-pinned: false
+
 ---
 
 # DeepSentinel — AI-Powered Deepfake Image Detection
@@ -18,8 +10,15 @@ DeepSentinel is a binary deepfake image classifier that detects whether a face p
 ![DeepSentinel App](docs/screenshot.png)
 
 ---
-
+title: DeepSentinel
+colorFrom: blue
+colorTo: red
+sdk: gradio
+sdk_version: "6.16.0"
+app_file: app/gradio_app.py
+pinned: false
 ## Features
+---
 
 - Upload a face image or use your **webcam** directly in the browser
 - Real-time classification: **REAL** or **FAKE** with confidence score
