@@ -15,6 +15,8 @@ pinned: false
 
 DeepSentinel is a binary deepfake image classifier that detects whether a face photo is **REAL** or a **DEEPFAKE**. Built with EfficientNet-B4 and trained on the Celeb-DF V2 dataset.
 
+![DeepSentinel App](docs/screenshot.png)
+
 ---
 
 ## Features
