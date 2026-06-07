@@ -11,15 +11,32 @@ SAMPLES_DIR  = Path("data/samples")
 _detector    = None
 
 
+def _download_weights_if_needed():
+    if WEIGHTS_PATH.exists():
+        return
+    hf_repo  = os.getenv("HF_REPO_ID")
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_repo:
+        raise FileNotFoundError(
+            f"Weights not found at {WEIGHTS_PATH} and HF_REPO_ID env var is not set.\n"
+            "Set HF_REPO_ID=your_username/deepsentinel-weights in Render environment variables."
+        )
+    print(f"Downloading weights from HuggingFace: {hf_repo} ...")
+    from huggingface_hub import hf_hub_download
+    WEIGHTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    hf_hub_download(
+        repo_id=hf_repo,
+        filename="efficientnet_b4.pth",
+        local_dir=str(WEIGHTS_PATH.parent),
+        token=hf_token,
+    )
+    print("Weights downloaded successfully.")
+
+
 def get_detector():
     global _detector
     if _detector is None:
-        if not WEIGHTS_PATH.exists():
-            raise FileNotFoundError(
-                f"Model weights not found at {WEIGHTS_PATH}.\n"
-                "Train the model first (notebooks/03_training.ipynb on Kaggle),\n"
-                "or download weights: python scripts/download_weights.py --repo YOUR_HF_REPO"
-            )
+        _download_weights_if_needed()
         _detector = Detector(weights_path=str(WEIGHTS_PATH))
     return _detector
 
@@ -57,4 +74,5 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
-    demo.launch(share=False)
+    port = int(os.getenv("PORT", 7860))
+    demo.launch(server_name="0.0.0.0", server_port=port)

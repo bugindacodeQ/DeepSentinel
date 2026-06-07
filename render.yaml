@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: deepsentinel
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app/gradio_app.py
+    plan: starter
+    envVars:
+      - key: HF_REPO_ID
+        value: 0veea/deepsentinel-weights
+      - key: HF_TOKEN
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11"
