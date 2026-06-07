@@ -11,24 +11,19 @@ SAMPLES_DIR  = Path("data/samples")
 _detector    = None
 
 
+HF_REPO_ID = os.getenv("HF_REPO_ID", "0veea/deepsentinel-weights")
+
 def _download_weights_if_needed():
     if WEIGHTS_PATH.exists():
         return
-    hf_repo  = os.getenv("HF_REPO_ID")
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_repo:
-        raise FileNotFoundError(
-            f"Weights not found at {WEIGHTS_PATH} and HF_REPO_ID env var is not set.\n"
-            "Set HF_REPO_ID=your_username/deepsentinel-weights in Render environment variables."
-        )
-    print(f"Downloading weights from HuggingFace: {hf_repo} ...")
+    print(f"Downloading weights from HuggingFace: {HF_REPO_ID} ...")
     from huggingface_hub import hf_hub_download
     WEIGHTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     hf_hub_download(
-        repo_id=hf_repo,
+        repo_id=HF_REPO_ID,
         filename="efficientnet_b4.pth",
         local_dir=str(WEIGHTS_PATH.parent),
-        token=hf_token,
+        token=os.getenv("HF_TOKEN"),
     )
     print("Weights downloaded successfully.")
 
