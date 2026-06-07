@@ -50,7 +50,6 @@ def predict(image):
         raise gr.Error(str(e))
     fake_prob = result["fake_prob"]
     real_prob = round(1 - fake_prob, 4)
-    print(f"[GRADIO] returning FAKE={fake_prob} REAL={real_prob}  label={result['label']}")
     return {"FAKE": fake_prob, "REAL": real_prob}
 
 

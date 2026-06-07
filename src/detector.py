@@ -85,13 +85,9 @@ class Detector:
                 logit = self.model(tensor)
                 probs.append(torch.sigmoid(logit).item())
 
-        raw_avg = sum(probs) / len(probs)
-        print(f"[DEBUG] raw sigmoid avg={raw_avg:.4f}  min={min(probs):.4f}  max={max(probs):.4f}")
+        fake_prob = sum(probs) / len(probs)  # sigmoid = P(fake): Celeb-real=class 0, Celeb-synthesis=class 1
+        real_prob = 1.0 - fake_prob
 
-        # ImageFolder alphabetical: fake=0, real=1 → sigmoid = P(real)
-        real_prob = raw_avg
-        fake_prob = 1.0 - real_prob
-
-        label = "FAKE" if fake_prob >= 0.65 else "REAL"
+        label = "FAKE" if fake_prob >= 0.50 else "REAL"
         confidence = fake_prob if label == "FAKE" else real_prob
         return {"label": label, "confidence": round(confidence, 4), "fake_prob": round(fake_prob, 4)}
