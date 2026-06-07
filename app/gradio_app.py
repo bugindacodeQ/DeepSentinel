@@ -1,37 +1,42 @@
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+APP_DIR  = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(APP_DIR)
+sys.path.insert(0, ROOT_DIR)
 
 from pathlib import Path
 import gradio as gr
 from src.detector import Detector
 
-WEIGHTS_PATH = Path("models/weights/efficientnet_b4.pth")
-SAMPLES_DIR  = Path("data/samples")
+WEIGHTS_PATH = Path(ROOT_DIR) / "models" / "weights" / "efficientnet_b4.pth"
+SAMPLES_DIR  = Path(ROOT_DIR) / "data" / "samples"
 _detector    = None
 
+WEIGHTS_URL = "https://huggingface.co/Oveea/deepsentinel-weights/resolve/main/efficientnet_b4.pth"
 
-HF_REPO_ID = os.getenv("HF_REPO_ID", "0veea/deepsentinel-weights")
-
-def _download_weights_if_needed():
+def _download_weights():
+    print(f"Weights path: {WEIGHTS_PATH}")
     if WEIGHTS_PATH.exists():
+        print("Weights already present.")
         return
-    print(f"Downloading weights from HuggingFace: {HF_REPO_ID} ...")
-    from huggingface_hub import hf_hub_download
+    import requests
+    print(f"Downloading weights from {WEIGHTS_URL} ...")
     WEIGHTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    hf_hub_download(
-        repo_id=HF_REPO_ID,
-        filename="efficientnet_b4.pth",
-        local_dir=str(WEIGHTS_PATH.parent),
-        token=os.getenv("HF_TOKEN"),
-    )
-    print("Weights downloaded successfully.")
+    with requests.get(WEIGHTS_URL, stream=True, timeout=300) as r:
+        r.raise_for_status()
+        with open(WEIGHTS_PATH, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+    print(f"Done: {WEIGHTS_PATH} ({WEIGHTS_PATH.stat().st_size / 1e6:.1f} MB)")
+
+
+_download_weights()
 
 
 def get_detector():
     global _detector
     if _detector is None:
-        _download_weights_if_needed()
         _detector = Detector(weights_path=str(WEIGHTS_PATH))
     return _detector
 
@@ -41,7 +46,7 @@ def predict(image):
         return {}
     try:
         result = get_detector().predict(image)
-    except FileNotFoundError as e:
+    except Exception as e:
         raise gr.Error(str(e))
     fake_prob = result["fake_prob"]
     real_prob = round(1 - fake_prob, 4)
