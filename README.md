@@ -11,7 +11,7 @@ pinned: false
 
 # DeepSentinel — AI-Powered Deepfake Image Detection
 
-**Live Demo:** [huggingface.co/spaces/Oveea/DeepSentinel](https://huggingface.co/spaces/Oveea/DeepSentinel)
+**Live App:** [huggingface.co/spaces/Oveea/DeepSentinel](https://huggingface.co/spaces/Oveea/DeepSentinel)
 
 DeepSentinel is a binary deepfake image classifier that detects whether a face photo is **REAL** or a **DEEPFAKE**. Built with EfficientNet-B4 and trained on the Celeb-DF V2 dataset.
 
