@@ -88,6 +88,8 @@ class Detector:
         fake_prob = sum(probs) / len(probs)  # sigmoid = P(fake): Celeb-real=class 0, Celeb-synthesis=class 1
         real_prob = 1.0 - fake_prob
 
-        label = "FAKE" if fake_prob >= 0.50 else "REAL"
+        # 0.65 threshold: phone selfies and real-world photos that land in the 0.50–0.65
+        # borderline zone are treated as REAL; model needs strong signal to call FAKE
+        label = "FAKE" if fake_prob >= 0.65 else "REAL"
         confidence = fake_prob if label == "FAKE" else real_prob
         return {"label": label, "confidence": round(confidence, 4), "fake_prob": round(fake_prob, 4)}
