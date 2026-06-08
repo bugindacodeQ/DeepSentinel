@@ -15,9 +15,22 @@ def _get_cascade():
         )
     return _face_cascade
 
+
+def _clahe_normalize(img_rgb: np.ndarray) -> np.ndarray:
+    """Normalize lighting via CLAHE on the L channel — helps dark/unevenly-lit photos."""
+    lab = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    lab = cv2.merge([clahe.apply(l), a, b])
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+
 def _crop_face(pil_image: Image.Image) -> Image.Image:
     img = np.array(pil_image.convert("RGB"))
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+    # Normalize lighting before face detection — improves detection in dark/dim photos
+    img_norm = _clahe_normalize(img)
+    gray = cv2.cvtColor(img_norm, cv2.COLOR_RGB2GRAY)
     cascade = _get_cascade()
 
     faces = []
@@ -25,6 +38,7 @@ def _crop_face(pil_image: Image.Image) -> Image.Image:
         (1.1, 5, 80),
         (1.05, 3, 50),
         (1.3, 2, 30),
+        (1.05, 2, 20),  # extra permissive pass for dark/challenging photos
     ]:
         faces = cascade.detectMultiScale(
             gray, scaleFactor=scale, minNeighbors=neighbors, minSize=(minsize, minsize)
@@ -37,36 +51,29 @@ def _crop_face(pil_image: Image.Image) -> Image.Image:
         side = min(h, w)
         y1 = (h - side) // 2
         x1 = (w - side) // 2
-        return Image.fromarray(img[y1:y1+side, x1:x1+side])
+        crop = img_norm[y1:y1+side, x1:x1+side]
+    else:
+        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+        pad = int(0.40 * max(w, h))
+        x1 = max(0, x - pad)
+        y1 = max(0, y - pad)
+        x2 = min(img.shape[1], x + w + pad)
+        y2 = min(img.shape[0], y + h + pad)
+        crop = img_norm[y1:y2, x1:x2]
 
-    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
-    pad = int(0.40 * max(w, h))  # slightly more context than before
-    x1 = max(0, x - pad)
-    y1 = max(0, y - pad)
-    x2 = min(img.shape[1], x + w + pad)
-    y2 = min(img.shape[0], y + h + pad)
-    return Image.fromarray(img[y1:y2, x1:x2])
+    return Image.fromarray(crop)
 
 
 def _tta_variants(face: Image.Image):
     """10 augmented variants that mirror the training distribution."""
     variants = [face]
-
-    # horizontal flip (same as training RandomHorizontalFlip)
     variants.append(face.transpose(Image.FLIP_LEFT_RIGHT))
-
-    # small rotations — faces are never perfectly straight in real photos
     for angle in [-10, -5, 5, 10]:
         variants.append(face.rotate(angle, resample=Image.BILINEAR, expand=False))
-
-    # brightness shifts matching training ColorJitter(brightness=0.2)
     for factor in [0.85, 1.15]:
         variants.append(ImageEnhance.Brightness(face).enhance(factor))
-
-    # contrast shifts matching training ColorJitter(contrast=0.2)
     for factor in [0.85, 1.15]:
         variants.append(ImageEnhance.Contrast(face).enhance(factor))
-
     return variants  # 10 total
 
 
@@ -88,8 +95,6 @@ class Detector:
         fake_prob = sum(probs) / len(probs)  # sigmoid = P(fake): Celeb-real=class 0, Celeb-synthesis=class 1
         real_prob = 1.0 - fake_prob
 
-        # 0.65 threshold: phone selfies and real-world photos that land in the 0.50–0.65
-        # borderline zone are treated as REAL; model needs strong signal to call FAKE
         label = "FAKE" if fake_prob >= 0.65 else "REAL"
         confidence = fake_prob if label == "FAKE" else real_prob
         return {"label": label, "confidence": round(confidence, 4), "fake_prob": round(fake_prob, 4)}
